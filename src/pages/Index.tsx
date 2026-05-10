@@ -2,6 +2,8 @@ import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import MainContent from "@/components/MainContent";
 import PlayerBar from "@/components/PlayerBar";
+import LoginModal from "@/components/LoginModal";
+import ProModal from "@/components/ProModal";
 import { TRACKS } from "@/data/soundwave";
 
 export default function Index() {
@@ -10,9 +12,16 @@ export default function Index() {
   const [playingId, setPlayingId] = useState<number | null>(1);
   const [likedIds, setLikedIds] = useState<number[]>([1, 3]);
   const [activeMood, setActiveMood] = useState<string | null>(null);
-  const [progress] = useState(37);
+  const [activeSituation, setActiveSituation] = useState<string | null>(null);
+  const [progress, setProgress] = useState(37);
+  const [volume, setVolume] = useState(75);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showPro, setShowPro] = useState(false);
 
-  const currentTrack = TRACKS.find((t) => t.id === playingId) || TRACKS[0];
+  const currentTrackIndex = TRACKS.findIndex((t) => t.id === playingId);
+  const currentTrack = TRACKS[currentTrackIndex] ?? TRACKS[0];
 
   const toggleLike = (id: number) => {
     setLikedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -20,14 +29,53 @@ export default function Index() {
 
   const playTrack = (id: number) => {
     setPlayingId(id === playingId ? null : id);
+    setProgress(0);
   };
 
   const toggleMood = (label: string) => {
     setActiveMood(activeMood === label ? null : label);
+    setActiveSituation(null);
+  };
+
+  const toggleSituation = (label: string) => {
+    setActiveSituation(activeSituation === label ? null : label);
+    setActiveMood(null);
   };
 
   const togglePlay = () => {
     setPlayingId(playingId ? null : currentTrack.id);
+  };
+
+  const skipNext = () => {
+    if (shuffle) {
+      const randomIndex = Math.floor(Math.random() * TRACKS.length);
+      setPlayingId(TRACKS[randomIndex].id);
+    } else {
+      const nextIndex = (currentTrackIndex + 1) % TRACKS.length;
+      setPlayingId(TRACKS[nextIndex].id);
+    }
+    setProgress(0);
+  };
+
+  const skipPrev = () => {
+    if (progress > 5) {
+      setProgress(0);
+      return;
+    }
+    const prevIndex = (currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
+    setPlayingId(TRACKS[prevIndex].id);
+    setProgress(0);
+  };
+
+  const playRandom = () => {
+    const randomIndex = Math.floor(Math.random() * TRACKS.length);
+    setPlayingId(TRACKS[randomIndex].id);
+    setProgress(0);
+  };
+
+  const playFirst = () => {
+    setPlayingId(TRACKS[0].id);
+    setProgress(0);
   };
 
   return (
@@ -47,18 +95,47 @@ export default function Index() {
         playingId={playingId}
         likedIds={likedIds}
         activeMood={activeMood}
+        activeSituation={activeSituation}
         onToggleMood={toggleMood}
+        onToggleSituation={toggleSituation}
         onToggleLike={toggleLike}
         onPlayTrack={playTrack}
+        onPlayFirst={playFirst}
+        onPlayRandom={playRandom}
+        onLogin={() => setShowLogin(true)}
+        onPro={() => setShowPro(true)}
       />
 
       <PlayerBar
         playingId={playingId}
         likedIds={likedIds}
         progress={progress}
+        volume={volume}
+        shuffle={shuffle}
+        repeat={repeat}
         onTogglePlay={togglePlay}
         onToggleLike={toggleLike}
+        onSkipNext={skipNext}
+        onSkipPrev={skipPrev}
+        onToggleShuffle={() => setShuffle((s) => !s)}
+        onToggleRepeat={() => setRepeat((r) => !r)}
+        onVolumeChange={setVolume}
+        onProgressChange={setProgress}
       />
+
+      {showLogin && (
+        <LoginModal
+          onClose={() => setShowLogin(false)}
+          onSwitchToPro={() => { setShowLogin(false); setShowPro(true); }}
+        />
+      )}
+
+      {showPro && (
+        <ProModal
+          onClose={() => setShowPro(false)}
+          onLogin={() => { setShowPro(false); setShowLogin(true); }}
+        />
+      )}
     </div>
   );
 }

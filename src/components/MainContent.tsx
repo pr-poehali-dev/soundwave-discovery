@@ -8,9 +8,15 @@ interface MainContentProps {
   playingId: number | null;
   likedIds: number[];
   activeMood: string | null;
+  activeSituation: string | null;
   onToggleMood: (label: string) => void;
+  onToggleSituation: (label: string) => void;
   onToggleLike: (id: number) => void;
   onPlayTrack: (id: number) => void;
+  onPlayFirst: () => void;
+  onPlayRandom: () => void;
+  onLogin: () => void;
+  onPro: () => void;
 }
 
 export default function MainContent({
@@ -19,9 +25,15 @@ export default function MainContent({
   playingId,
   likedIds,
   activeMood,
+  activeSituation,
   onToggleMood,
+  onToggleSituation,
   onToggleLike,
   onPlayTrack,
+  onPlayFirst,
+  onPlayRandom,
+  onLogin,
+  onPro,
 }: MainContentProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -36,7 +48,15 @@ export default function MainContent({
 
   const smartMood = getSmartMoodFromQuery();
 
+  const SITUATION_MOOD_MAP: Record<string, string> = {
+    "Утро понедельника": "вдохновение",
+    "Пробежка в парке": "энергия",
+    "Вечер с друзьями": "радость",
+    "Дождь за окном": "меланхолия",
+  };
+
   const filteredTracks = TRACKS.filter((t) => {
+    if (activeSituation) return t.mood === (SITUATION_MOOD_MAP[activeSituation] ?? "энергия");
     if (!searchQuery && !activeMood) return true;
     if (!searchQuery && activeMood) return t.mood === activeMood.toLowerCase();
     const q = searchQuery.toLowerCase();
@@ -118,10 +138,10 @@ export default function MainContent({
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="glass rounded-xl px-4 py-2 text-sm font-body text-white/55 hover:text-white border border-white/5 hover:bg-white/5 transition-all">
+          <button onClick={onLogin} className="glass rounded-xl px-4 py-2 text-sm font-body text-white/55 hover:text-white border border-white/5 hover:bg-white/5 transition-all">
             Войти
           </button>
-          <button className="btn-neon rounded-xl px-4 py-2 text-sm font-body font-semibold text-white relative z-10">
+          <button onClick={onPro} className="btn-neon rounded-xl px-4 py-2 text-sm font-body font-semibold text-white relative z-10">
             Pro версия
           </button>
         </div>
@@ -156,11 +176,11 @@ export default function MainContent({
                   «Песня про осень и расставание» — и мы найдём.
                 </p>
                 <div className="flex gap-3">
-                  <button className="btn-neon rounded-2xl px-6 py-3 font-body font-semibold text-white flex items-center gap-2 relative z-10">
+                  <button onClick={onPlayFirst} className="btn-neon rounded-2xl px-6 py-3 font-body font-semibold text-white flex items-center gap-2 relative z-10">
                     <Icon name="Play" size={16} className="text-white" />
                     Слушать сейчас
                   </button>
-                  <button className="glass rounded-2xl px-6 py-3 font-body font-semibold text-white/65 hover:text-white border border-white/10 flex items-center gap-2 transition-all hover:bg-white/5">
+                  <button onClick={onPlayRandom} className="glass rounded-2xl px-6 py-3 font-body font-semibold text-white/65 hover:text-white border border-white/10 flex items-center gap-2 transition-all hover:bg-white/5">
                     <Icon name="Shuffle" size={16} />
                     Случайное
                   </button>
@@ -201,7 +221,7 @@ export default function MainContent({
         )}
 
         {/* Situations */}
-        {!searchQuery && !activeMood && (
+        {!searchQuery && !activeMood && !activeSituation && (
           <section>
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-display text-xl font-bold text-white">Время и место</h2>
@@ -211,7 +231,12 @@ export default function MainContent({
               {SITUATIONS.map((s) => (
                 <button
                   key={s.label}
-                  className="glass rounded-2xl p-5 text-left border border-white/5 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all group"
+                  onClick={() => onToggleSituation(s.label)}
+                  className={`rounded-2xl p-5 text-left border transition-all group ${
+                    activeSituation === s.label
+                      ? "border-purple-500/50 bg-purple-500/10"
+                      : "glass border-white/5 hover:border-purple-500/30 hover:bg-purple-500/5"
+                  }`}
                 >
                   <div className="text-3xl mb-3">{s.emoji}</div>
                   <div className="font-body font-semibold text-white/85 text-sm mb-1">{s.label}</div>
@@ -227,7 +252,7 @@ export default function MainContent({
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="font-display text-xl font-bold text-white">
-                {searchQuery ? `Результаты поиска` : activeMood ? `Настроение: ${activeMood}` : "Главная волна"}
+                {searchQuery ? `Результаты поиска` : activeSituation ? activeSituation : activeMood ? `Настроение: ${activeMood}` : "Главная волна"}
               </h2>
               {searchQuery && (
                 <p className="text-sm text-white/35 font-body mt-1">
